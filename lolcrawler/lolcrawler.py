@@ -150,11 +150,16 @@ class LolCrawler(LolCrawlerBase):
             logger.info("No summoner ids found in database, starting with seed summoner")
         else:
             for i in range(0, 100):
+                #print(last_summoner_cursor)
                 self.summoner_ids += [last_summoner_cursor.next()["_id"]]
                 #print(self.summoner_ids)
             logger.info("Starting with latest summoner ids in database")
         while True:
-            self.crawl()
+            try:
+                self.crawl()
+            except Exception as e:
+                logger.error(e)
+                time.sleep(600)
 
 
     def crawl(self):

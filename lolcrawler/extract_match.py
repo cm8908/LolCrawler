@@ -123,11 +123,11 @@ def extract_match_infos(match):
     """Extract additional information from the raw match data
     """
     extractions = {}
-    extractions["patchMajorNumeric"] = extract_major_patch(match["matchVersion"])
-    extractions["patchMinorNumeric"] = extract_minor_patch(match["matchVersion"])
-    extractions["patch"] = extract_patch(match["matchVersion"])
+    #extractions["patchMajorNumeric"] = extract_major_patch(match["matchVersion"])
+    #extractions["patchMinorNumeric"] = extract_minor_patch(match["matchVersion"])
+    #extractions["patch"] = extract_patch(match["matchVersion"])
 
-    tiers = [x["highestAchievedSeasonTier"] for x in match["participants"]]
+    tiers = [x["highestAchievedSeasonTier"] for x in match['metadata']["participants"]]
     extractions["tier"] = get_most_common_tier(tiers)
     extractions["highestPlayerTier"] = get_highest_tier(tiers)
     extractions["lowestPlayerTier"] = get_lowest_tier(tiers)
