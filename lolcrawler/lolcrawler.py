@@ -34,7 +34,7 @@ MATCHLIST_PAGE_LIMIT = 60
 class LolCrawlerBase():
     """Crawler base class for all crawlers"""
 
-    def __init__(self, api, db_client, region, include_timeline=False):
+    def __init__(self, api, db_client, region, count, type, include_timeline=False, ):
         self.api = api
         self.include_timeline = include_timeline
         ## Stack of summoner ids to crawl
@@ -44,11 +44,14 @@ class LolCrawlerBase():
         self.match_ids = []
         self.match_ids_done = []
         self.db_client = db_client
-	self.region = region
+        self.region = region
+        self.count = count
+        self.type = type
 
 
     def _store(self, identifier, entity_type, entity, upsert=False):
         """Stores matches and matchlists"""
+        #entity = {'matches': entity,  '_id': identifier}
         entity.update({'_id': identifier})
         try:
             if upsert:
@@ -65,15 +68,17 @@ class LolCrawlerBase():
         self.summoner_ids = []
         self.match_ids = []
 
-    def crawl_matchlist(self, summoner_id):
+    def crawl_matchlist(self, summoner_id, count, type):
         """Crawls matchlist of given summoner,
         stores it and saves the matchIds"""
         logger.debug('Getting partial matchlist of summoner %s' % (summoner_id))
-        matchlist = self.api.match.matchlist_by_account(account_id = summoner_id, region = self.region)
+        matchlist = self.api.match.matchlist_by_puuid(region = self.region, puuid = summoner_id, count = count, type = type) #count, type
+        matchlist = {'matches': matchlist}
+        #print(matchlist)
         matchlist["extractions"] = {"region": self.region}
         self._store(identifier=summoner_id, entity_type=MATCHLIST_COLLECTION, entity=matchlist, upsert=True)
         self.summoner_ids_done.append(summoner_id)
-        match_ids = [x['gameId'] for x in matchlist['matches']]
+        match_ids = matchlist['matches']
         self.match_ids.extend(match_ids)
         return match_ids
 
@@ -116,9 +121,10 @@ class LolCrawlerBase():
             logger.debug('Crawling match %s' % (match_id))
             match = self.api.match.by_id(match_id=match_id, region=self.region)
             try:
-                match["extractions"] = extract_match_infos(match)
+                #match["extractions"] = extract_match_infos(match)
+                #print(match['extractions'])
                 self._store(identifier=match_id, entity_type=MATCH_COLLECTION, entity=match)
-                summoner_ids = [x['player']['summonerId'] for x in match['participantIdentities']]
+                summoner_ids = [x['puuid'] for x in match['info']['participants']]
                 ## remove summoner ids the crawler has already seen
                 new_summoner_ids = list(set(summoner_ids) - set(self.summoner_ids_done))
                 self.summoner_ids = new_summoner_ids + self.summoner_ids
@@ -145,6 +151,7 @@ class LolCrawler(LolCrawlerBase):
         else:
             for i in range(0, 100):
                 self.summoner_ids += [last_summoner_cursor.next()["_id"]]
+                #print(self.summoner_ids)
             logger.info("Starting with latest summoner ids in database")
         while True:
             self.crawl()
@@ -154,10 +161,11 @@ class LolCrawler(LolCrawlerBase):
         summoner_id = self.summoner_ids.pop()
         logger.debug("Crawling summoner {summoner_id}".format(summoner_id=summoner_id))
 
-        match_ids = self.crawl_matchlist(summoner_id)
+        match_ids = self.crawl_matchlist(summoner_id, count = self.count, type = self.type)
         ## Choose from last ten matches
-        random_match_id = np.random.choice(range(0, min(10, len(match_ids))))
+        random_match_id = np.random.choice(range(0, min(20, len(match_ids))))
         match_id = match_ids[random_match_id]
+        #print(match_id)
         self.crawl_match(match_id)
 
 
