@@ -144,6 +144,7 @@ class LolCrawler(LolCrawlerBase):
     def start(self, start_summoner_id):
         """Start infinite crawling loop"""
         logger.info("Start crawling")
+        print('Start crawling')
         last_summoner_cursor = self.db_client[MATCHLIST_COLLECTION].find({"extractions.region": self.region}).sort("$natural", pymongo.DESCENDING)
         if last_summoner_cursor.count() == 0:
             self.summoner_ids = [start_summoner_id]
@@ -159,6 +160,8 @@ class LolCrawler(LolCrawlerBase):
                 self.crawl()
             except Exception as e:
                 logger.error(e)
+                print(datetime.datetime.now(), ' --- ', e)
+                print("Exception has been raised. Sleeping 10 minutes")
                 time.sleep(600)
 
 
