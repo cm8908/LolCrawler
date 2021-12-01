@@ -160,9 +160,9 @@ class LolCrawler(LolCrawlerBase):
                 self.crawl()
             except Exception as e:
                 logger.error(e)
-                print(datetime.datetime.now(), ' --- ', e)
-                print("Exception has been raised. Sleeping 10 minutes")
-                time.sleep(600)
+                print(datetime.now(), ' --- ', e)
+                print("Exception has been raised. Sleeping 5 minutes")
+                time.sleep(300)
 
 
     def crawl(self):
