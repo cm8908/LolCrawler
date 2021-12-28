@@ -2,13 +2,15 @@ import re
 from collections import Counter
 from datetime import date
 
-TIER_ORDER = {"CHALLENGER": 7,
-              "MASTER": 6,
-              "DIAMOND": 5,
-              "PLATINUM": 4,
-              "GOLD": 3,
-              "SILVER": 2,
-              "BRONZE": 1,
+TIER_ORDER = {"CHALLENGER": 9,
+              "GRANDMASTER": 8,
+              "MASTER": 7,
+              "DIAMOND": 6,
+              "PLATINUM": 5,
+              "GOLD": 4,
+              "SILVER": 3,
+              "BRONZE": 2,
+              "IRON": 1,
               "UNRANKED": 0}
 
 def surrendered(match):
@@ -16,10 +18,10 @@ def surrendered(match):
     ## Improvement suggestion: Use match timeline if available
     ## Improvement: Build prediction model based on labeled matches
 
-    match_duration = match['matchDuration']
+    match_duration = match['info']['gameDuration']
 
-    ## Cannot surrender before Minute 20
-    if match_duration < 60 * 20:
+    ## Cannot surrender before Minute 15
+    if match_duration < 60 * 15:
         return 0
     ## Guess surrender by team stats
     winner_stats = list(filter(lambda x: x['winner'], match['teams']))[0]
@@ -119,25 +121,27 @@ def extract_major_patch(match_version):
     return int(re.findall("([0-9]+)\.[0-9]+\.", match_version)[0])
 
 
+
+
 def extract_match_infos(match):
     """Extract additional information from the raw match data
     """
     extractions = {}
-    #extractions["patchMajorNumeric"] = extract_major_patch(match["matchVersion"])
-    #extractions["patchMinorNumeric"] = extract_minor_patch(match["matchVersion"])
-    #extractions["patch"] = extract_patch(match["matchVersion"])
+    extractions["patchMajorNumeric"] = extract_major_patch(match['info']["gameVersion"])
+    extractions["patchMinorNumeric"] = extract_minor_patch(match['info']["gameVersion"])
+    extractions["patch"] = extract_patch(match['info']["gameVersion"])
 
-    tiers = [x["highestAchievedSeasonTier"] for x in match['metadata']["participants"]]
-    extractions["tier"] = get_most_common_tier(tiers)
-    extractions["highestPlayerTier"] = get_highest_tier(tiers)
-    extractions["lowestPlayerTier"] = get_lowest_tier(tiers)
+    #tiers = [x["highestAchievedSeasonTier"] for x in match['metadata']["participants"]]
+    #extractions["tier"] = get_most_common_tier(tiers)
+    #extractions["highestPlayerTier"] = get_highest_tier(tiers)
+    #extractions["lowestPlayerTier"] = get_lowest_tier(tiers)
 
-    extractions['surrendered'] = surrendered(match)
-    extractions['surrenderedAt20'] = surrendered_at_20(match)
+    FIXME: #extractions['surrendered'] = surrendered(match)
+    FIXME: #extractions['surrenderedAt20'] = surrendered_at_20(match)
 
-    ## Timeline extractions
-    if 'timeline' in match.keys():
-        extractions['winDuringBaronBuff'] = win_while_baron_buff(match)
+    TODO: ### Timeline extractions
+    #if 'timeline' in match.keys():
+        #extractions['winDuringBaronBuff'] = win_while_baron_buff(match)
     return extractions
 
 

@@ -34,7 +34,7 @@ MATCHLIST_PAGE_LIMIT = 60
 class LolCrawlerBase():
     """Crawler base class for all crawlers"""
 
-    def __init__(self, api, db_client, region, count, type, include_timeline=False, ):
+    def __init__(self, api, db_client, region, summoner_region, count, type, include_timeline=False, ):
         self.api = api
         self.include_timeline = include_timeline
         ## Stack of summoner ids to crawl
@@ -45,6 +45,7 @@ class LolCrawlerBase():
         self.match_ids_done = []
         self.db_client = db_client
         self.region = region
+        self.summoner_region = summoner_region
         self.count = count
         self.type = type
 
@@ -111,6 +112,52 @@ class LolCrawlerBase():
         self.match_ids.extend(match_ids)
         return match_ids
 
+    def extract_league(self, match):
+        extractions = {}
+        for puuid in match['metadata']['participants']:
+            dic = {}
+            try:
+                summoner = self.api.summoner.by_puuid(self.summoner_region, puuid)
+                data = self.api.league.by_summoner(self.summoner_region, summoner['id'])
+                if len(data) > 0:
+                    data = data[0]
+                else:
+                    tier = 'U' #Unranked
+                    lp = 0; wins = 0; losses = 0;
+            except:
+                logging.error("Could not find the summoner or the summoner's league data")
+            
+            data['tier'][0] # I B S G P D M GM C
+            if data['tier'][:2] == 'GO':
+                tier = 'G'
+            elif data['tier'][:2] == 'GR':
+                tier = 'GM'
+            else:
+                tier = data['tier'][0]
+            
+            if data['rank'] == 'I':
+                rank = '1'
+            elif data['rank'] == 'II':
+                rank = '2'
+            elif data['rank'] == 'III':
+                rank = '3'
+            elif data['rank'] == 'IV':
+                rank = '4'
+                
+            lp = data['leaguePoints']
+            wins = data['wins']; losses = data['losses']
+            
+            if tier in ['C', 'GM', 'M', 'U']:
+                dic['tier'] = tier
+            else:
+                dic['tier'] = tier+rank
+            dic['leaguePoints'] = lp
+            dic['wins'] = wins; dic['losses'] = losses
+            extractions['puuid'] = dic
+        return extractions
+
+            
+
 
     def crawl_match(self, match_id):
         """Crawl match with given match_id,
@@ -121,7 +168,8 @@ class LolCrawlerBase():
             logger.debug('Crawling match %s' % (match_id))
             match = self.api.match.by_id(match_id=match_id, region=self.region)
             try:
-                #match["extractions"] = extract_match_infos(match)
+                match["extractions"] = extract_match_infos(match)
+                match["extractions_league"] = self.extract_league(match)
                 #print(match['extractions'])
                 self._store(identifier=match_id, entity_type=MATCH_COLLECTION, entity=match)
                 summoner_ids = [x['puuid'] for x in match['info']['participants']]
@@ -144,7 +192,7 @@ class LolCrawler(LolCrawlerBase):
     def start(self, start_summoner_id):
         """Start infinite crawling loop"""
         logger.info("Start crawling")
-        print('Start crawling')
+        #print('Start crawling')
         last_summoner_cursor = self.db_client[MATCHLIST_COLLECTION].find({"extractions.region": self.region}).sort("$natural", pymongo.DESCENDING)
         if last_summoner_cursor.count() == 0:
             self.summoner_ids = [start_summoner_id]

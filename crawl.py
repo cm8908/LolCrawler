@@ -20,6 +20,7 @@ if __name__=="__main__":
         raise LookupError("Provide your API key in config.py")
 
     region=config["region"]
+    summoner_region=config["summoner_region"]
 
     count=config['count']
     type=config['type']
@@ -38,7 +39,7 @@ if __name__=="__main__":
         crawler.start(regions=['euw1', 'na', 'kr', 'eune'], leagues=['challenger'])
     else:
         ## Initialise crawler
-        crawler =  LolCrawler(api, db_client=db, include_timeline=config["include_timeline"], region = region, count = count, type = type)
+        crawler =  LolCrawler(api, db_client=db, include_timeline=config["include_timeline"], region = region, summoner_region=summoner_region count = count, type = type)
         crawler.start(config['summoner_seed_id'])
 
 
