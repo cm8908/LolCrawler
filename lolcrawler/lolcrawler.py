@@ -118,42 +118,46 @@ class LolCrawlerBase():
             dic = {}
             try:
                 summoner = self.api.summoner.by_puuid(self.summoner_region, puuid)
+                time.sleep(3)
                 data = self.api.league.by_summoner(self.summoner_region, summoner['id'])
+                time.sleep(3)
                 if len(data) > 0:
                     data = data[0]
                 else:
                     tier = 'U' #Unranked
                     lp = 0; wins = 0; losses = 0;
-            except:
-                logging.error("Could not find the summoner or the summoner's league data")
+                    
+                data['tier'][0] # I B S G P D M GM C
+                if data['tier'][:2] == 'GO':
+                    tier = 'G'
+                elif data['tier'][:2] == 'GR':
+                    tier = 'GM'
+                else:
+                    tier = data['tier'][0]
             
-            data['tier'][0] # I B S G P D M GM C
-            if data['tier'][:2] == 'GO':
-                tier = 'G'
-            elif data['tier'][:2] == 'GR':
-                tier = 'GM'
-            else:
-                tier = data['tier'][0]
-            
-            if data['rank'] == 'I':
-                rank = '1'
-            elif data['rank'] == 'II':
-                rank = '2'
-            elif data['rank'] == 'III':
-                rank = '3'
-            elif data['rank'] == 'IV':
-                rank = '4'
+                if data['rank'] == 'I':
+                    rank = '1'
+                elif data['rank'] == 'II':
+                    rank = '2'
+                elif data['rank'] == 'III':
+                    rank = '3'
+                elif data['rank'] == 'IV':
+                    rank = '4'
                 
-            lp = data['leaguePoints']
-            wins = data['wins']; losses = data['losses']
+                lp = data['leaguePoints']
+                wins = data['wins']; losses = data['losses']
             
-            if tier in ['C', 'GM', 'M', 'U']:
-                dic['tier'] = tier
-            else:
-                dic['tier'] = tier+rank
-            dic['leaguePoints'] = lp
-            dic['wins'] = wins; dic['losses'] = losses
-            extractions['puuid'] = dic
+                if tier in ['C', 'GM', 'M', 'U']:
+                    dic['tier'] = tier
+                else:
+                    dic['tier'] = tier+rank
+                dic['leaguePoints'] = lp
+                dic['wins'] = wins; dic['losses'] = losses
+                extractions[puuid] = dic
+            except Exception as e:
+                logging.error("Could not find the summoner or the summoner's league data for summoner ID : "+summoner['id'])
+                print(e)
+            
         return extractions
 
             
@@ -170,7 +174,7 @@ class LolCrawlerBase():
             try:
                 match["extractions"] = extract_match_infos(match)
                 match["extractions_league"] = self.extract_league(match)
-                #print(match['extractions'])
+                print(match['extractions_league'])
                 self._store(identifier=match_id, entity_type=MATCH_COLLECTION, entity=match)
                 summoner_ids = [x['puuid'] for x in match['info']['participants']]
                 ## remove summoner ids the crawler has already seen

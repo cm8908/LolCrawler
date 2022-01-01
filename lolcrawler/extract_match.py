@@ -136,10 +136,10 @@ def extract_match_infos(match):
     #extractions["highestPlayerTier"] = get_highest_tier(tiers)
     #extractions["lowestPlayerTier"] = get_lowest_tier(tiers)
 
-    FIXME: #extractions['surrendered'] = surrendered(match)
-    FIXME: #extractions['surrenderedAt20'] = surrendered_at_20(match)
+     #extractions['surrendered'] = surrendered(match)
+     #extractions['surrenderedAt20'] = surrendered_at_20(match)
 
-    TODO: ### Timeline extractions
+     ### Timeline extractions
     #if 'timeline' in match.keys():
         #extractions['winDuringBaronBuff'] = win_while_baron_buff(match)
     return extractions
